@@ -34,30 +34,35 @@
             //async : true,
             dataType: 'json',
             success: function(data){
-                //alert('Redirecting...');
                 retData=data.results;
                 console.log(retData.products[0]);
+	            var res='';
+				if (retData.products.length > 0) {
+					for(x=0;x<retData.products.length;x++)
+					{
+						console.log(retData.products[x]["prd"].length);
+						res +=
+						'<tr>'+
+							'<th scope="row">'+retData.products[x]['product_id']+
+							'</br>'+retData.products[x]['varian_id']+
+							'</br>'+retData.products[x]['color_id']+
+							'</br><div class="btn-group-sm" role="group">'+
+							'<button type="button" class="btn btn-primary">Edit</button>'+
+							'<button type="button" class="btn btn-primary">Delete</button></div> </th>';
+							for (i = 0;i <retData.products[x]["prd"].length;i++) {
+								console.log(retData.products[x]['prd'][i]);
+								res = res + '<td> <br>'+retData.products[x]['prd'][i]+'</td>';
+							};
+							res= res + '</tr>';
 
-                // echo '<tr>';
-                //         echo '<th scope="row">'.$products[$x]['product_id'];
-                //         echo '</br>'.$products[$x]['varian_id'];
-                //         echo '</br>'.$products[$x]['color_id'];
-                //         echo '</br> <button>Edit</button> <button>Delete</button>'.'</th>';
-                var res='';
-                
-                $.each (retData.products[0], function (key, value) {
-                    console.log(key+'='+value);
-                    res +=
-            '<tr>'+
-                '<th scope="row">'+value+
-                '</br>'+value+
-                '</br>'+value+
-                '</br> <button>Edit</button> <button>Delete</button> </th>'+
-           '</tr>';
+					}
+				}
+				else {
+					res = '<tr><th scope="row" colspan="10">Tidak ada data</th></tr>';
+				}
 
-   });
 
-            $('tbody').html(res);
+				$('tbody').html(res);
 
             },
             error: function(data){
@@ -116,9 +121,9 @@
 
 <style>
 
-    /* .table-striped-columns{
-        overflow: auto;
-    } */
+table {
+  /* table-layout: fixed; */
+}
 
 </style>
 
@@ -139,15 +144,15 @@
 
 <div class="container-fluid">
  
-<form>
-   <div class="">
+
+   <div >
         <table class="table table-striped-columns table-hover table-fit align-middle">
             <thead>
                 <tr>
-                    <th scope="col" > Header </th>
+                    <th scope="col"  > Header </th>
                     <?php
                         for($i = 0;$i < 31;$i++) {
-                            echo '<th scope="col" class ="col-1">' . $i + 1 . '</th>';
+                            echo '<th scope="col" >' . $i + 1 . '</th>';
                         }
             ?>
                 </tr>
@@ -157,42 +162,47 @@
                 //foreach($products as $product)
                 if(!empty($products) && is_array($products)) {
                     for($x = 0;$x < count($products);$x++) {
-                        // echo '<tr>';
-                        // echo '<td>'.$product['product_id'].'</td>';
-                        // echo '</tr>';
-                        // echo '<tr>';
-                        // echo '<td>'.$product['varian_id'].'</td>';
-                        // echo '</tr>';
-                        // echo '<tr>';
-                        // echo '<td>'.$product['color_id'].'</td>';
-                        // echo '</tr>';
+
                         echo '<tr>';
                         echo '<th scope="row">'.$products[$x]['product_id'];
                         echo '</br>'.$products[$x]['varian_id'];
                         echo '</br>'.$products[$x]['color_id'];
                         echo '</br> <button>Edit</button> <button>Delete</button>'.'</th>';
-                        //echo '<td>'.$product['prd']['1'].'</td>';
 
-                        //print_r($product["prd"]);
                         for ($i = 0;$i < count($products[$x]["prd"]);$i++) {
                             // echo '<br>';
                             echo '<td> <br>'.$products[$x]["prd"][$i].'</td>';
                         }
-                        //echo '<td>'.$product['prd'].'</td>';
                         echo '</tr>';
 
 
                     }
                 } else {
-                    echo '<tr>';
-                    echo '<th scope="row">Tidak ada data</th>';
-                    echo '</tr>';
+                    // echo '<tr>';
+                    // echo '<th scope="row">Tidak ada data</th>';
+                    // echo '</tr>';
                 }
             ?>         
             </tbody>
         </table>
 
     </div>
-    <input type="submit" value="Save">
-</form>
+    <!-- <input type="submit" value="Save" hidden> -->
+	<hr>
+    <div class="row" colspan="4">
+		<div class="col-1 d-grid gap-2"> 
+			<a href="<?php echo site_url('/mps')?>" class="btn btn-primary" role="button">Add</a>
+		</div>
+		<div class="col-1 d-grid gap-2"> 			
+			<button type="button" class="btn btn-primary">
+                Reset
+            </button>
+		</div>
+		<div class="col-1 d-grid gap-2"> 
+			<button type="button" class="btn btn-primary">
+                Run Sim
+            </button>
+		</div>
+
+	</div>
 </div>
