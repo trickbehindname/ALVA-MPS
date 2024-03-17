@@ -152,7 +152,7 @@
         if(mth==0){mth=12; yr=yr-1};
         if(mth==13){mth=1; yr=yr+1};
 
-        document.getElementById("tday").value = mth+" "+yr;
+        //document.getElementById("tday").value = mth+" "+yr;
 
         console.log("year " + yr);
         console.log("bulan (num) " + mth);

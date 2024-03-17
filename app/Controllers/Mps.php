@@ -165,12 +165,54 @@ class Mps extends BaseController
         $query= $builder->get();
 		$data['products'] = $query->getResultArray();
         
+        for($i=0;$i<count($data['products']);$i++)
+        {
+            //ambil row dari tabel operation_production_plan_header 
+            //yang punya product-color-varian-bulan produksi yang sama
 
-          print_r($data['products'][0]);
-        // die;
+            $builder->select('day(production_date) as tgl,quantity');//,planning_date,production_sequence,JPH,VIN,status');
+            $builder->where('product_id',$data['products'][$i]['product_id']);
+            $builder->where('color_id',$data['products'][$i]['color_id']);
+            $builder->where('varian_id',$data['products'][$i]['varian_id']);
+            $builder->where('model_id',$data['products'][$i]['model_id']);
+            // $builder->where('Month(production_date)','5');
+            // $builder->where('Year(production_date)','2024');
+            $query= $builder->get();           
+            $dt=[]; 
+            $dt = $query->getResultArray();
+           
+
+            $data['products'][$i]['prd']=$dt;
+            $d=[];
+
+            //print_r(count($dt));
+            foreach($dt as $key=>$value)
+            {
+                $d=array_merge($d,[$value['tgl'] => $value['quantity']]);
+                //$d[]=array($value['tgl']=>$value['quantity']);
+            }
+            //print_r($d);
+            // print_r('---');
+            
+            // $test = array(
+            //     "dog" => "cat",
+            //     "anjing" => "kucing"
+            // );
+            // //$test["anjing"]=["kucing"];
+            // //array_push($test,$testpush);
+            $data['products'][$i]['prd']=$d;
+            
+            // print_r($d);
+            // print_r('---');
+            
+        }
+        
+        //  print_r($data['products'][0]);
+        
 
 		
 		$db->close();
+
 
         return view('templates/header', $data)
             . view('mps/simulation')
