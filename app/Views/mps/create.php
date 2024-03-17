@@ -2,17 +2,14 @@
 <div class="container">
     <?php
     $today = date("d-M-Y");
-    echo '<h4> Current Date : '.$today.'</h4>'
-    ?>
+echo '<h4> Current Date : '.$today.'</h4>'
+?>
 </div>
 <!--?= session()->getFlashdata('error'); ?-->
 <!--?= validation_list_errors() ?-->
 
 <script type="text/javascript">
 
-    const monthNames = ["January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-        ];
     const numDays = (y, m) => new Date(y, m, 0).getDate();
 
     function set_cal(month, year)
@@ -152,7 +149,7 @@
         if(mth==0){mth=12; yr=yr-1};
         if(mth==13){mth=1; yr=yr+1};
 
-        //document.getElementById("tday").value = mth+" "+yr;
+        document.getElementById("tday").value = mth+" "+yr;
 
         console.log("year " + yr);
         console.log("bulan (num) " + mth);
@@ -262,12 +259,12 @@
 </script>
 
 <?php
-    $Month		= //isset($_POST['Month-select']) ;
-    $MY ='';
-    $doM        = 0;
-    $d          = 0;
+$Month		= //isset($_POST['Month-select']) ;
+$MY = '';
+$doM        = 0;
+$d          = 0;
 
-    // $_POST['Month-select'] : $month;
+// $_POST['Month-select'] : $month;
 ?>
 
 
@@ -303,25 +300,23 @@
                                 <!-- <select class="btn bg-gradient-primary dropdown-toggle" data-bs-toggle="dropdown" id="Month-select" name="Month-select">
                                 <option selected>Select Month</option> -->
                                 <!-- <?php
-                                        for ($x = 1; $x <= 12; $x++) 
-                                        {
-                                            $month_name = date("F", mktime(0, 0, 0, $x)); 
+                                        for ($x = 1; $x <= 12; $x++) {
+                                            $month_name = date("F", mktime(0, 0, 0, $x));
                                             // echo "The number is: $x <br>";
-                                            if($x == $Month)
-                                            {
-                                                if($x>0)
-                                                $d = cal_days_in_month(CAL_GREGORIAN,$x,2024);
+                                            if($x == $Month) {
+                                                if($x > 0) {
+                                                    $d = cal_days_in_month(CAL_GREGORIAN, $x, 2024);
+                                                }
                                                 echo '<option value="' . $x . '" selected>' . $month_name . '</option>';
-                                            }
-                                            else
-                                            {
-                                                if($x>0)
-                                                $d = cal_days_in_month(CAL_GREGORIAN,$x,2024);
+                                            } else {
+                                                if($x > 0) {
+                                                    $d = cal_days_in_month(CAL_GREGORIAN, $x, 2024);
+                                                }
                                                 echo "<option value=".$x.">".$month_name."-".$d."</option>";
                                             }
                                         }
 
-                                    ?> -->
+?> -->
                                 <!-- </select> -->
 
                         </div>
@@ -417,28 +412,26 @@
         <!-- <div class="col"></div> -->
             <?php
                 //$hdn='hidden="true"';
-                $hdn='';
-                //create textbox and checkbox
-                for ($x = 1; $x <= $d; $x++) 
-                {
-                    echo '<div class="col">';
-                    echo '<div class="d-flex justify-content-center">';
-                    echo '<input type="text"  id = "txtd-'.$x.'" '.$hdn.' disabled=true name="txtd[]" value="'.set_value('quantity'.$x.'').'" size="2">';
-                    echo '</div>';
-                    echo '<div class="d-flex justify-content-center">';
-                    echo '<label name = "lbl[]" id = "lbl-'.$x.'" '.$hdn.' disabled=true >'.$x.'</label>';
-                    echo '</div>';
-                    echo '<div class="form-check d-flex justify-content-center">';
-                    // <input class="form-check-input" type="checkbox" value="{{obj.total}}" id="flexCheckDefault" checked> <!-- CENTER THIS ITEM -->
-                    echo '<input type="checkbox" class="form-check-input" id = "chkbox-'.$x.'" '.$hdn.' disabled=true value=false>';
-                    echo '</div>';
-                    echo '</div>';
-                    if(round($x % 16)==0)
-                    {
-                        echo '<div class="w-100"></div> <br><br>';
-                    }
-                }
-            ?>
+                $hdn = '';
+//create textbox and checkbox
+for ($x = 1; $x <= $d; $x++) {
+    echo '<div class="col">';
+    echo '<div class="d-flex justify-content-center">';
+    echo '<input type="text"  id = "txtd-'.$x.'" '.$hdn.' disabled=true name="txtd[]" value="'.set_value('quantity'.$x.'').'" size="2">';
+    echo '</div>';
+    echo '<div class="d-flex justify-content-center">';
+    echo '<label name = "lbl[]" id = "lbl-'.$x.'" '.$hdn.' disabled=true >'.$x.'</label>';
+    echo '</div>';
+    echo '<div class="form-check d-flex justify-content-center">';
+    // <input class="form-check-input" type="checkbox" value="{{obj.total}}" id="flexCheckDefault" checked> <!-- CENTER THIS ITEM -->
+    echo '<input type="checkbox" class="form-check-input" id = "chkbox-'.$x.'" '.$hdn.' disabled=true value=false>';
+    echo '</div>';
+    echo '</div>';
+    if(round($x % 16) == 0) {
+        echo '<div class="w-100"></div> <br><br>';
+    }
+}
+?>
 
 
         

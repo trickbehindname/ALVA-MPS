@@ -55,7 +55,13 @@
     <!-- end of calendar component -->
 
 
-    <title>CodeIgniter Tutorial</title>
+    <script type="text/javascript">
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+        ];
+
+    </script>
+
 
     <style>
 		label, input { display:block; }
@@ -79,6 +85,8 @@
         }
     </style>
    
+   <title>Alva MPS</title>
+
 </head>
 <body>
     <div class="container border-bottom">

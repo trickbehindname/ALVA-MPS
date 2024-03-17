@@ -15,7 +15,7 @@ class Mps extends BaseController
 {
     protected $helpers = ['custom'];
 
-    function __construct()
+    public function __construct()
     {
         $this -> mstmdl  = new MstmdlModel();
         $this -> mstclr  = new MstclrModel();
@@ -32,10 +32,10 @@ class Mps extends BaseController
         $data['mstprods'] = $this -> mstprod -> findAll();
         $data['OpPrdPlanHdrs'] = $this -> OpPrdPlanHdr -> findAll();
 
-        $data['title'] ='MPS';
+        $data['title'] = 'MPS';
 
         return view('templates/header', $data)
-        . view('mps/create'  )
+        . view('mps/create')
         . view('templates/footer');
     }
 
@@ -68,16 +68,16 @@ class Mps extends BaseController
         // }
 
         $model = model(OpPrdPlanHdrModel::class);
-        
+
         $data = $this->request->getPost(['model','color','product','txtd[]','tday']);
         $tday = explode(' ', $data['tday']);
-     
+
         // print_r($tday);
         // die;
-           $mth = (int)$tday[0];
+        $mth = (int)$tday[0];
         $yr = (int)$tday[1];
-        $txtd =$data['txtd[]'];
-       // $lbl = $data['lbl[]'];
+        $txtd = $data['txtd[]'];
+        // $lbl = $data['lbl[]'];
         //$ndate = mktime(0,0,0,$mth,$dt,$yr);
 
         //$mthDtl = [];
@@ -88,27 +88,26 @@ class Mps extends BaseController
         //     $mthDtl[$i]=mktime(0,0,0,$mth,$dt,$yr);
         //     // print_r(date("d-m-Y",$mthDtl[$i])." ");
         // }
-        
-        for($i=0;$i<count($txtd);$i++)
-        {
-            $dt = $i+1;
-            $prdd = date('Y-m-d',mktime(0,0,0,$mth,$dt,$yr));//date_format(mktime(0,0,0,$mth,$dt,$yr),"YYYY-MM-DD");
+
+        for($i = 0;$i < count($txtd);$i++) {
+            $dt = $i + 1;
+            $prdd = date('Y-m-d', mktime(0, 0, 0, $mth, $dt, $yr));//date_format(mktime(0,0,0,$mth,$dt,$yr),"YYYY-MM-DD");
             $pld = date('Y-m-d');
             $model->save([
                 'model_id' => $data['model'],
                 'color_id' => $data['color'],
                 'product_id' => $data['product'],
                 'quantity' => $txtd[$i],
-                'production_date' => date("Y-m-d",mktime(0,0,0,$mth,$dt,$yr)),
+                'production_date' => date("Y-m-d", mktime(0, 0, 0, $mth, $dt, $yr)),
                 'planning_date' => $pld//date("Y-m-d")
             ]);
             //print_r($pld);
         }
 
-      //print_r(date("d-m-Y",$mthDtl[5]));
+        //print_r(date("d-m-Y",$mthDtl[5]));
         // die;
-            
-//        exit;
+
+        //        exit;
 
 
     }
@@ -144,78 +143,103 @@ class Mps extends BaseController
     //         . view('templates/footer');
     // }
 
-    public function simulation()
+    public function loadsimulation($tday = null)
     {
+        // if ($tday == null) {
+        //     $tday = date('Y-m-d');
+        // }
+
+        $data = $this->request->getPost(['tday']);
+
+        $mmyy = explode(' ', $data['tday']);
+        if (count($mmyy) < 2) {
+
+            $mmyy[1] = "";
+        }
+
+
         helper('form');
+        helper('date');
         $data['title'] = 'SIMULATION'; // Capitalize the first letter
 
         $data['mstmdls'] = $this -> mstmdl -> findAll();
         $data['mstclrs'] = $this -> mstclr -> findAll();
         $data['mstprods'] = $this -> mstprod -> findAll();
-        $data['OpPrdPlanHdrs'] = $this -> OpPrdPlanHdr 
-            ->where('Month(production_date)','5')
-            ->where('Year(production_date)','2024')
+        $data['OpPrdPlanHdrs'] = $this -> OpPrdPlanHdr
+            ->where('Month(production_date)', '5')
+            ->where('Year(production_date)', '2024')
             ->findAll();
-       
-		$db      = \Config\Database::connect('lcl');
-		$builder = $db->table('operation_production_plan_header');
 
-		$builder->select('product_id,color_id,varian_id,model_id');
-		$builder->distinct();
-        $query= $builder->get();
-		$data['products'] = $query->getResultArray();
-        
-        for($i=0;$i<count($data['products']);$i++)
-        {
-            //ambil row dari tabel operation_production_plan_header 
+        $db      = \Config\Database::connect('lcl');
+        $builder = $db->table('operation_production_plan_header');
+
+        $builder->select('product_id,color_id,varian_id,model_id');
+        $builder->distinct();
+        $builder->where('Month(production_date)', $mmyy[0]);
+        $builder->where('Year(production_date)', $mmyy[1]);
+        $query = $builder->get();
+        $data['products'] = $query->getResultArray();
+
+        for($i = 0;$i < count($data['products']);$i++) {
+            //ambil row dari tabel operation_production_plan_header
             //yang punya product-color-varian-bulan produksi yang sama
 
             $builder->select('day(production_date) as tgl,quantity');//,planning_date,production_sequence,JPH,VIN,status');
-            $builder->where('product_id',$data['products'][$i]['product_id']);
-            $builder->where('color_id',$data['products'][$i]['color_id']);
-            $builder->where('varian_id',$data['products'][$i]['varian_id']);
-            $builder->where('model_id',$data['products'][$i]['model_id']);
-            // $builder->where('Month(production_date)','5');
-            // $builder->where('Year(production_date)','2024');
-            $query= $builder->get();           
-            $dt=[]; 
+            $builder->where('product_id', $data['products'][$i]['product_id']);
+            $builder->where('color_id', $data['products'][$i]['color_id']);
+            $builder->where('varian_id', $data['products'][$i]['varian_id']);
+            $builder->where('model_id', $data['products'][$i]['model_id']);
+            $builder->where('Month(production_date)', $mmyy[0]);
+            $builder->where('Year(production_date)', $mmyy[1]);
+            $query = $builder->get();
+            $dt = [];
             $dt = $query->getResultArray();
-           
 
-            $data['products'][$i]['prd']=$dt;
-            $d=[];
+
+            $data['products'][$i]['prd'] = $dt;
+            $d = [];
 
             //print_r(count($dt));
-            foreach($dt as $key=>$value)
-            {
-                $d=array_merge($d,[$value['tgl'] => $value['quantity']]);
+            foreach($dt as $key => $value) {
+                $d = array_merge($d, [$value['tgl'] => $value['quantity']]);
                 //$d[]=array($value['tgl']=>$value['quantity']);
             }
             //print_r($d);
             // print_r('---');
-            
+
             // $test = array(
             //     "dog" => "cat",
             //     "anjing" => "kucing"
             // );
             // //$test["anjing"]=["kucing"];
             // //array_push($test,$testpush);
-            $data['products'][$i]['prd']=$d;
-            
+            $data['products'][$i]['prd'] = $d;
+
             // print_r($d);
             // print_r('---');
-            
+
         }
-        
+
         //  print_r($data['products'][0]);
+
+
+
+        $db->close();
+
+        //echo json_encode($data);
+        $result = array("results" => $data);
         
+        header("Content-Type: application/json");
+        echo json_encode($result, JSON_PRETTY_PRINT);
+        // return view('templates/header', $data)
+        //     . view('mps/simulation', $data)
+        //     . view('templates/footer');
+    }
 
-		
-		$db->close();
-
-
+    public function simulation($tday = null){
+        $data['title'] = 'SIMULATION'; // Capitalize the first letter
         return view('templates/header', $data)
-            . view('mps/simulation')
-            . view('templates/footer');
+        . view('mps/simulation', $data)
+        . view('templates/footer');
     }
 }
