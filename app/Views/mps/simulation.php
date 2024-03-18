@@ -37,6 +37,16 @@
                 retData=data.results;
                 console.log(retData.products[0]);
 	            var res='';
+				// <table class="table table-striped-columns">
+				res=res+
+				'<table class="table table-striped-columns"> <tr>'+
+                '    <th>  </th>';
+				for(i = 0;i < 31;i++) {
+					res+=
+                    '    <th>'+(i+1)+'</th>';
+				};
+				res=res+'</tr>';
+
 				if (retData.products.length > 0) {
 					for(x=0;x<retData.products.length;x++)
 					{
@@ -53,16 +63,17 @@
 								console.log(retData.products[x]['prd'][i]);
 								res = res + '<td> <br>'+retData.products[x]['prd'][i]+'</td>';
 							};
-							res= res + '</tr>';
+							res= res + '</tr></table>';
 
 					}
 				}
 				else {
-					res = '<tr><th scope="row" colspan="10">Tidak ada data</th></tr>';
+					res += '<tr><th scope="row">Tidak ada data</th></tr></table>';
 				}
 
 
-				$('tbody').html(res);
+				$('#tablez').html(res);
+				console.log("table");
 
             },
             error: function(data){
@@ -108,6 +119,7 @@
             data : {tday: vl},
             dataType: 'json',
             success: function(data){
+				
                 console.log("success ajax");
             },
             error: function(data){
@@ -140,26 +152,31 @@ table {
     </div>
 
 
+	
+
 
 
 <div class="container-fluid">
  
 
-   <div >
-        <table class="table table-striped-columns table-hover table-fit align-middle">
-            <thead>
+   <div id="tablez" >
+        <table class="table table-striped-columns">
+			<!-- <colgroup>
+			<col span="1" style="background-color: #D6EEEE">
+			</colgroup> -->
+			<!-- <thead> -->
                 <tr>
-                    <th scope="col"  > Header </th>
+                    <th>  </th>
                     <?php
                         for($i = 0;$i < 31;$i++) {
-                            echo '<th scope="col" >' . $i + 1 . '</th>';
+                            echo '<th>' . $i + 1 . '</th>';
                         }
-            ?>
-                </tr>
-            </thead>
+            		?>
+                <!-- </tr> -->
+            <!-- </thead> -->
             <tbody>
                     <?php
-                //foreach($products as $product)
+                // //foreach($products as $product)
                 if(!empty($products) && is_array($products)) {
                     for($x = 0;$x < count($products);$x++) {
 
@@ -178,14 +195,13 @@ table {
 
                     }
                 } else {
-                    // echo '<tr>';
-                    // echo '<th scope="row">Tidak ada data</th>';
-                    // echo '</tr>';
+                    echo '<tr>';
+                    echo '<th scope="row">Tidak ada data</th>';
+                    echo '</tr>';
                 }
             ?>         
             </tbody>
-        </table>
-
+		</table>
     </div>
     <!-- <input type="submit" value="Save" hidden> -->
 	<hr>
