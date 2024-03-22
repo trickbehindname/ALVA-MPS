@@ -1,4 +1,18 @@
 <script type="text/javascript">
+    // function procsim()
+    // {
+    //     var vl = document.getElementById("tday").value;
+    //     $.ajax({
+    //         url : '<?php echo site_url('/processsimulation')?>',
+    //         type : 'POST',
+    //         data : {tday:  vl}
+    //         // dataType: 'json',
+    //         success: function(data){
+    //             window.location.href = "/path/to/thankyoupage";
+    //         }
+    //     })
+    // }
+    
     function mth(updown) {
         //ambil selected calendar utk proses hari. calendar ada di tag h2
         var ud=0;
@@ -35,7 +49,7 @@
             dataType: 'json',
             success: function(data){
                 retData=data.results;
-                console.log(retData.products[0]);
+                console.log(retData);
 	            var res='';
 				// <table class="table table-striped-columns">
 				res=res+
@@ -63,9 +77,10 @@
 								console.log(retData.products[x]['prd'][i]);
 								res = res + '<td> <br>'+retData.products[x]['prd'][i]+'</td>';
 							};
-							res= res + '</tr></table>';
+							res= res + '</tr>';
 
 					}
+					res+-'</table>';
 				}
 				else {
 					res += '<tr><th scope="row">Tidak ada data</th></tr></table>';
@@ -114,13 +129,13 @@
         document.getElementById("tday").value =month +" "+year ;
         
         $.ajax({
-            url : '<?php echo site_url('/loadsimulation')?>',
+            url : '<?php echo '/loadsimulation'?>',
             type : 'POST',
             data : {tday: vl},
             dataType: 'json',
             success: function(data){
 				
-                console.log("success ajax");
+                console.log(data);
             },
             error: function(data){
                 console.log("failed 2 ajax");
@@ -139,8 +154,17 @@ table {
 
 </style>
 
+<?php
+// if (
+//     !empty($_POST['tday'])) {
+//     $tday = $_POST['tday'];
+// }
+            ?>
+   
 
-    <input type=text id="tday" name="tday" value="">
+ 
+
+    
     <div class="calendar calendar-first" id="calendar_first">
         <div class="calendar_header">
             <button class="switch-month switch-left" onclick="mth(0)"> <i class="fa fa-chevron-left"></i></button>
@@ -165,40 +189,43 @@ table {
 			<col span="1" style="background-color: #D6EEEE">
 			</colgroup> -->
 			<!-- <thead> -->
-                <tr>
-                    <th>  </th>
-                    <?php
-                        for($i = 0;$i < 31;$i++) {
-                            echo '<th>' . $i + 1 . '</th>';
-                        }
-            		?>
-                <!-- </tr> -->
+			<tr>
+				<th>  </th>
+				<?php
+                                for($i = 0;$i < 31;$i++) {
+                                    echo '<th>' . $i + 1 . '</th>';
+                                }
+            ?>
+			</tr>
             <!-- </thead> -->
             <tbody>
                     <?php
-                // //foreach($products as $product)
-                if(!empty($products) && is_array($products)) {
-                    for($x = 0;$x < count($products);$x++) {
-
-                        echo '<tr>';
-                        echo '<th scope="row">'.$products[$x]['product_id'];
-                        echo '</br>'.$products[$x]['varian_id'];
-                        echo '</br>'.$products[$x]['color_id'];
-                        echo '</br> <button>Edit</button> <button>Delete</button>'.'</th>';
-
-                        for ($i = 0;$i < count($products[$x]["prd"]);$i++) {
-                            // echo '<br>';
-                            echo '<td> <br>'.$products[$x]["prd"][$i].'</td>';
-                        }
-                        echo '</tr>';
+            // //foreach($products as $product)
+            //print_r($data);
+            if(!empty($products) && is_array($products)) {
+                for($x = 0;$x < count($products);$x++) {
 
 
-                    }
-                } else {
+
                     echo '<tr>';
-                    echo '<th scope="row">Tidak ada data</th>';
+                    echo '<th scope="row">'.$products[$x]['product_id'];
+                    echo '</br>'.$products[$x]['varian_id'];
+                    echo '</br>'.$products[$x]['color_id'];
+                    echo '</br> <button>Edit</button> <button>Delete</button>'.'</th>';
+
+                    for ($i = 0;$i < count($products[$x]["prd"]);$i++) {
+                        // echo '<br>';
+                        echo '<td> <br>'.$products[$x]["prd"][$i].'</td>';
+                    }
                     echo '</tr>';
+
+
                 }
+            } else {
+                echo '<tr>';
+                echo '<th scope="row">Tidak ada data</th>';
+                echo '</tr>';
+            }
             ?>         
             </tbody>
 		</table>
@@ -206,6 +233,8 @@ table {
     <!-- <input type="submit" value="Save" hidden> -->
 	<hr>
     <div class="row" colspan="4">
+    <form action ="processsimulation" method="post">
+        <input type=text id="tday" name="tday" value="" >
 		<div class="col-1 d-grid gap-2"> 
 			<a href="<?php echo site_url('/mps')?>" class="btn btn-primary" role="button">Add</a>
 		</div>
@@ -215,10 +244,18 @@ table {
             </button>
 		</div>
 		<div class="col-1 d-grid gap-2"> 
-			<button type="button" class="btn btn-primary">
-                Run Sim
-            </button>
+            
+	    		<a href="<?php echo site_url('/processsimulation') ?>" class="btn btn-primary" role="button">
+                    Run Sim
+                </a>
+
+                <?php
+                    echo form_submit('mybtn','submit')
+                ?>
 		</div>
+
+        </form>
 
 	</div>
 </div>
+      

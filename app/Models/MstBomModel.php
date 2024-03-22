@@ -4,21 +4,21 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class OpPrdPlanHdrModel extends Model
+class MstBomModel extends Model
 {
     protected $DBGroup          = 'lcl';
-    protected $table            = 'operation_production_plan_header';
-    protected $primaryKey       = 'opph_id';
+    protected $table            = 'mst_bom';
+    protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['product_id','color_id','quantity','production_sequence','production_date','planning_date','jph','vin','model_id','varian_id','timestamp','status'];
+    protected $allowedFields    = ['BOM_PRODUCT_ID','BOM_ITEM_ID','BOM_ITEM_QTY','BOM_ITEM_SEQ'];
 
-    // Dates
-    // protected $useTimestamps = true;
+    // // Dates
+    // protected $useTimestamps = false;
     // protected $dateFormat    = 'datetime';
-    // protected $createdField  = 'timestamp';
+    // protected $createdField  = 'created_at';
     // protected $updatedField  = 'updated_at';
     // protected $deletedField  = 'deleted_at';
 

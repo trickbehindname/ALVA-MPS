@@ -188,7 +188,7 @@ echo '<h4> Current Date : '.$today.'</h4>'
         year = today.getFullYear();
         month = today.getMonth()+1;
 
-        var vl =monthNames[today.getMonth()] + " -" + year;
+        var vl =month + " " + year;
         document.getElementById("tday").value = vl ;
         set_cal(month, year);
 
@@ -252,7 +252,7 @@ echo '<h4> Current Date : '.$today.'</h4>'
         //     }
         // }
 
-        document.getElementById("jph").value = wd;
+        //document.getElementById("jph").value = wd;
         console.log("working day:"+ wd +" per day:" + ipd+" residual:" + res);
 
     }
