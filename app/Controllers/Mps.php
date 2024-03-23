@@ -64,41 +64,61 @@ class Mps extends BaseController
         $txtd = $data['txtd[]'];
 
         //check if data already exists for this month and year
-        $builder ->select('opph_id,production_date');
-        $builder -> where('model_id', $data['model']);
-        $builder -> where('color_id', $data['color']);
-        $builder -> where('product_id', $data['product']);
-        $builder -> where('month(production_date)', $mth);
-        $builder -> where('year(production_date)', $yr);
+        //if not exists then create new sequence
+        //if already exists, get sequence and check for update or add new sequence
 
-        $check = $builder->get()->getResultArray();
+        $db      = \Config\Database::connect('lcl');
+        $builder = $db->table('operation_production_plan_header');
 
-        if (count($check) > 0) {
-            //data exists, update
+        $sqls = 'SELECT month(production_date) as prdmonth, 
+			year(production_date) as prdyear, max(production_sequence) as maxseq
+            from operation_production_plan_header where 
+			-- model_id = ' . $data['model'].'and 
+			-- color_id = '. $data['color'].'and 
+			-- product_id = '. $data['product'] . 'and 
+			month(production_date) = '. $mth.'and 
+			year(production_date) = '. $yr. '
+			GROUP by prdmonth, prdyear';
 
-            //$dtins[];
+        $query = $db->query($sqls);
 
-            foreach($check as $row) {
-                $opph_id = $row['opph_id'];
-                $production_date = $row['production_date'];
-                $i=intval(substr($production_date,-2)-1);
-                $qty= $txtd[$i];
-                $dtins = [
-                    'quantity' => $qty
-                ];
-                
-                print_r($opph_id." ".$qty." ". $production_date."\n");
-                
-               $model->update($opph_id, $dtins);
+        $tmp = $query->getResultArray();
+
+        $upd = 0;
+        $maxseq = 0;
+
+        if(count($tmp) > 0) {
+            $maxseq = intval($tmp['maxseq']);
+            //if exists, check model, color, variant, product id. if diff, -> new plan, if not -> update plan
+            $builder -> select('model_id, color_id, variant_id, product_id');
+            $builder -> where('model_id', $data['model']);
+            $builder -> where('color_id', $data['color']);
+            $builder -> where('product_id', $data['product']);
+            $builder -> where('month(production_date)', $mth);
+            $builder -> where('year(production_date)', $yr);
+            $check = $builder->get()->getResultArray();
+
+            if (count($check) > 0) {
+                $upd = 1;//= intval($check['production_sequence']);
+            } else {
+                $upd = 0;
             }
-    
+
+
+
         } else {
-            //data does not exist, insert
+            $maxseq = 0;
+        }
+
+        //if maxseq = 0 or not update -> create new sequence
+        if((maxseq == 0) || $upd == 0) {
+            $maxseq = maxseq + 1;
+
             for($i = 0;$i < count($txtd);$i++) {
                 $dt = $i + 1;
                 $prdd = date('Y-m-d', mktime(0, 0, 0, $mth, $dt, $yr));//date_format(mktime(0,0,0,$mth,$dt,$yr),"YYYY-MM-DD");
                 $pld = date('Y-m-d');
-                $clr= $data['color'];
+                $clr = $data['color'];
 
 
 
@@ -108,12 +128,102 @@ class Mps extends BaseController
                     'product_id' => $data['product'],
                     'quantity' => $txtd[$i],
                     'production_date' => date("Y-m-d", mktime(0, 0, 0, $mth, $dt, $yr)),
-                    'planning_date' => $pld//date("Y-m-d")
+                    'planning_date' => $pld,//date("Y-m-d")
+                    'production_sequence' => $maxseq
                 ]);
                 //print_r($pld);
             }
 
+        } else { //else (maxseq>0 or upd>0)-> update
+
+            $builder ->select('opph_id,production_date,production_sequence');
+            $builder -> where('model_id', $data['model']);
+            $builder -> where('color_id', $data['color']);
+            $builder -> where('product_id', $data['product']);
+            $builder -> where('month(production_date)', $mth);
+            $builder -> where('year(production_date)', $yr);
+            //if($maxseq > 0){
+            $builder -> where('production_sequence', $yr);
+            //}
+
+            $check = $builder->get()->getResultArray();
+
+            //if (count($check) > 0) {
+            //data exists, update
+
+            //$dtins[];
+
+            foreach($check as $row) {
+                $opph_id = $row['opph_id'];
+                $production_date = $row['production_date'];
+                $i = intval(substr($production_date, -2) - 1);
+                $qty = $txtd[$i];
+                $dtins = [
+                    'quantity' => $qty
+                ];
+
+                print_r($opph_id." ".$qty." ". $production_date."\n");
+
+                $model->update($opph_id, $dtins);
+            }
+
+            //};
+
         }
+
+        // $builder ->select('opph_id,production_date,production_sequence');
+        // $builder -> where('model_id', $data['model']);
+        // $builder -> where('color_id', $data['color']);
+        // $builder -> where('product_id', $data['product']);
+        // $builder -> where('month(production_date)', $mth);
+        // $builder -> where('year(production_date)', $yr);
+        // if($maxseq > 0){
+        // 	$builder -> where('production_sequence', $yr);
+        // }
+
+        // $check = $builder->get()->getResultArray();
+
+        // if (count($check) > 0) {
+        //     //data exists, update
+
+        //     //$dtins[];
+
+        //     foreach($check as $row) {
+        //         $opph_id = $row['opph_id'];
+        //         $production_date = $row['production_date'];
+        //         $i=intval(substr($production_date,-2)-1);
+        //         $qty= $txtd[$i];
+        //         $dtins = [
+        //             'quantity' => $qty
+        //         ];
+
+        //         print_r($opph_id." ".$qty." ". $production_date."\n");
+
+        //        $model->update($opph_id, $dtins);
+        //     }
+
+        // } else {
+        //     //data does not exist, insert
+        //     for($i = 0;$i < count($txtd);$i++) {
+        //         $dt = $i + 1;
+        //         $prdd = date('Y-m-d', mktime(0, 0, 0, $mth, $dt, $yr));//date_format(mktime(0,0,0,$mth,$dt,$yr),"YYYY-MM-DD");
+        //         $pld = date('Y-m-d');
+        //         $clr= $data['color'];
+
+
+
+        //         $model->save([
+        //             'model_id' => $data['model'],
+        //             'color_id' => $clr,
+        //             'product_id' => $data['product'],
+        //             'quantity' => $txtd[$i],
+        //             'production_date' => date("Y-m-d", mktime(0, 0, 0, $mth, $dt, $yr)),
+        //             'planning_date' => $pld//date("Y-m-d")
+        //         ]);
+        //         //print_r($pld);
+        //     }
+
+        // }
 
 
 
@@ -260,8 +370,8 @@ class Mps extends BaseController
         . view('templates/footer');
     }
 
-   
-    public function loadsimresult($tday=null)
+
+    public function loadsimresult($tday = null)
     {
         helper('form');
         $data = $this->request->getPost(['tday']);
@@ -269,25 +379,25 @@ class Mps extends BaseController
         // if (count($mmyy) < 2) {
         //     $mmyy[1] = "";
         // }
-        
-        
+
+
         $data = $this->processsimresult($data);
 
         $data['title'] = 'SIMULATION RESULLT'; // Capitalize the first letter
 
-         //print_r($data);
+        //print_r($data);
         // die;
-        $result = array("results"=>$data);
+        $result = array("results" => $data);
 
         header("Content-Type: application/json");
-        echo json_encode($result,JSON_PRETTY_PRINT);
+        echo json_encode($result, JSON_PRETTY_PRINT);
 
         // return view('templates/header', $data)
         // . view('mps/simresult', $data)
         // . view('templates/footer');
     }
 
-    public function simresult($tday=null)
+    public function simresult($tday = null)
     {
         // Capitalize the first letter
 
@@ -296,7 +406,7 @@ class Mps extends BaseController
 
         //$data = $this->processsimresult($data);
 
-        //print_r($data); 
+        //print_r($data);
         $data['title'] = 'SIMULATION RESULT';
 
         //$result = array("results" => $data);
@@ -309,7 +419,7 @@ class Mps extends BaseController
     public function processsimresult($data)
     {
 
-        
+
         $mmyy = explode(' ', $data['tday']);
         if (count($mmyy) < 2) {
 
@@ -319,22 +429,22 @@ class Mps extends BaseController
         $db      = \Config\Database::connect('lcl');
         $builder = $db->table('operation_production_plan_header');
 
-        $sqls='SELECT ITEM_ID,sum(oi.IN_QTY) as inv_qty,
+        $sqls = 'SELECT ITEM_ID,sum(oi.IN_QTY) as inv_qty,
             mbm.BOM_ITEM_QTY,(sum(oi.IN_QTY)/mbm.bom_item_qty) as maxprodqty
             FROM master_bom mbm
             inner join o_inventory oi on mbm.BOM_ITEM_ID=oi.ITEM_ID
             where mbm.BOM_PRODUCT_ID=1 
             group by ITEM_ID
             ORDER BY maxprodqty';
-        
+
         $query = $db->query($sqls);
 
         $tmp = $query->getResultArray();
         $maxprodqty = intval($tmp[0]['maxprodqty']);
 
         //example : starting from now(march 2024)
-      //  $mmyy[0]=3;//month
-      //  $mmyy[1]=2024;//year
+        //  $mmyy[0]=3;//month
+        //  $mmyy[1]=2024;//year
 
         //get this month simulation data
         $builder->select('product_id,color_id,varian_id,model_id');
@@ -376,17 +486,17 @@ class Mps extends BaseController
 
         $db->close();
 
-       $prodqty=0;
+        $prodqty = 0;
         //set maximum date for production(don't count if no prod this month)
-        for($i = 0;$i < count( $data['products'][0]['prd'] );$i++) {
-            $prodqty=$prodqty+$data['products'][0]['prd'][$i];
+        for($i = 0;$i < count($data['products'][0]['prd']);$i++) {
+            $prodqty = $prodqty + $data['products'][0]['prd'][$i];
             //print_r($maxprodqty);
 
-            if($prodqty==$maxprodqty) {
-                $i=$i+1;
+            if($prodqty == $maxprodqty) {
+                $i = $i + 1;
                 break;
             }
-            if($prodqty>=$maxprodqty) {
+            if($prodqty >= $maxprodqty) {
 
                 break;
 
@@ -395,7 +505,7 @@ class Mps extends BaseController
         };
 
         //max production date for this product(should change to dynamic)
-        $data['products'][0]['maxproddate']=$i;
+        $data['products'][0]['maxproddate'] = $i;
 
 
 
@@ -411,18 +521,18 @@ class Mps extends BaseController
         // $tday = $_POST['tday'];
         $data = $this->request->getPost(['tday']);
 
-        if($data['tday']!=''){
+        if($data['tday'] != '') {
 
             $mmyy = explode(' ', $data['tday']);
             if (count($mmyy) < 2) {
-    
+
                 $mmyy[1] = "";
             }
-    
+
             // print_r($mmyy);
 
-            
-    
+
+
         }
 
         $data['title'] = 'Process'; // Capitalize the first letter
