@@ -408,17 +408,22 @@ class Mps extends BaseController
     public function processsimulation()
     {
 
-        $tday = $_POST['tday'];
-
+        // $tday = $_POST['tday'];
         $data = $this->request->getPost(['tday']);
 
-        $mmyy = explode(' ', $data['tday']);
-        if (count($mmyy) < 2) {
+        if($data['tday']!=''){
 
-            $mmyy[1] = "";
+            $mmyy = explode(' ', $data['tday']);
+            if (count($mmyy) < 2) {
+    
+                $mmyy[1] = "";
+            }
+    
+            // print_r($mmyy);
+
+            
+    
         }
-
-        print_r($mmyy);
 
         $data['title'] = 'Process'; // Capitalize the first letter
         return view('templates/header', $data)
