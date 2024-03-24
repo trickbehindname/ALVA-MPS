@@ -222,6 +222,7 @@ echo '<h4> Current Date : '.$today.'</h4>'
 
         for(i=1;i<=31; i++)//set the number of item per day
         {
+            document.getElementById("txtd-"+i).value = 0;
             if(document.getElementById("chkbox-"+i).checked==true && document.getElementById("chkbox-"+i).disabled==false)
             {
                 document.getElementById("txtd-"+i).value = ipd;

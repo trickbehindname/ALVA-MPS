@@ -73,24 +73,28 @@ class Mps extends BaseController
         $sqls = 'SELECT month(production_date) as prdmonth, 
 			year(production_date) as prdyear, max(production_sequence) as maxseq
             from operation_production_plan_header where 
-			-- model_id = ' . $data['model'].'and 
-			-- color_id = '. $data['color'].'and 
-			-- product_id = '. $data['product'] . 'and 
-			month(production_date) = '. $mth.'and 
+			month(production_date) = '. $mth.' and 
 			year(production_date) = '. $yr. '
 			GROUP by prdmonth, prdyear';
 
+			// -- model_id = ' . $data['model'].'and 
+			// -- color_id = '. $data['color'].'and 
+			// -- product_id = '. $data['product'] . 'and 
+		//print_r($sqls);
+		//die;
         $query = $db->query($sqls);
 
         $tmp = $query->getResultArray();
+// print_r($tmp);
+// die;
 
         $upd = 0;
         $maxseq = 0;
 
         if(count($tmp) > 0) {
-            $maxseq = intval($tmp['maxseq']);
+            $maxseq = intval($tmp[0]['maxseq']);
             //if exists, check model, color, variant, product id. if diff, -> new plan, if not -> update plan
-            $builder -> select('model_id, color_id, variant_id, product_id');
+            $builder -> select('model_id, color_id, varian_id, product_id');
             $builder -> where('model_id', $data['model']);
             $builder -> where('color_id', $data['color']);
             $builder -> where('product_id', $data['product']);
@@ -111,8 +115,8 @@ class Mps extends BaseController
         }
 
         //if maxseq = 0 or not update -> create new sequence
-        if((maxseq == 0) || $upd == 0) {
-            $maxseq = maxseq + 1;
+        if(($maxseq == 0) || $upd == 0) {
+            $maxseq = $maxseq + 1;
 
             for($i = 0;$i < count($txtd);$i++) {
                 $dt = $i + 1;
@@ -143,7 +147,7 @@ class Mps extends BaseController
             $builder -> where('month(production_date)', $mth);
             $builder -> where('year(production_date)', $yr);
             //if($maxseq > 0){
-            $builder -> where('production_sequence', $yr);
+            $builder -> where('production_sequence', $maxseq);
             //}
 
             $check = $builder->get()->getResultArray();
@@ -162,7 +166,7 @@ class Mps extends BaseController
                     'quantity' => $qty
                 ];
 
-                print_r($opph_id." ".$qty." ". $production_date."\n");
+                //print_r($opph_id." ".$qty." ". $production_date."\n");
 
                 $model->update($opph_id, $dtins);
             }
