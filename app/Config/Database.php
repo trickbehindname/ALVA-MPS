@@ -77,9 +77,9 @@ class Database extends Config
     
 	public array $lcl = [
 		'DSN'          => '',
-		'hostname'     => 'localhost',
-		'username'     => 'root',
-		'password'     => '',
+		'hostname'     => '192.168.68.120',
+		'username'     => 'benz',
+		'password'     => '150576141184',
 		'database'     => 'ci4',
 		'DBDriver'     => 'MySQLi',
 		'DBPrefix'     => '',
@@ -95,6 +95,28 @@ class Database extends Config
 		'port'         => 3306,
 		'numberNative' => false,
 	];
+
+    // public array $lcl = [
+	// 	'DSN'          => '',
+	// 	'hostname'     => 'localhost',
+	// 	'username'     => 'root',
+	// 	'password'     => '',
+	// 	'database'     => 'ci4',
+	// 	'DBDriver'     => 'MySQLi',
+	// 	'DBPrefix'     => '',
+	// 	'pConnect'     => false,
+	// 	'DBDebug'      => true,
+	// 	'charset'      => 'utf8',
+	// 	'DBCollat'     => 'utf8_general_ci',
+	// 	'swapPre'      => '',
+	// 	'encrypt'      => false,
+	// 	'compress'     => false,
+	// 	'strictOn'     => false,
+	// 	'failover'     => [],
+	// 	'port'         => 3306,
+	// 	'numberNative' => false,
+	// ];
+
     /**
      * This database connection is used when
      * running PHPUnit database tests.

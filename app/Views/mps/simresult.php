@@ -1,4 +1,4 @@
-<script type="text/javascript">
+<!-- <script type="text/javascript">
       $(document).ready(function(){
         // karena calendar loading setelah page ready, jadi harus ambil today month manual.
         // const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -73,6 +73,7 @@
             error: function(data){
                 alert("ajax error, json: " + data);
                 console.log(data);
+                console.log('masih error');
             }
         });
     
@@ -173,7 +174,7 @@
         });
     }
 
-</script>
+</script> -->
 
 <input type=text id="tday" name="tday" value="" >
     <div class="calendar calendar-first" id="calendar_first">

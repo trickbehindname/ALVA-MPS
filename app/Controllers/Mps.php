@@ -408,7 +408,7 @@ class Mps extends BaseController
         //helper('form');
         $data = $this->request->getPost(['tday']);
 
-        //$data = $this->processsimresult($data);
+        $data = $this->processsimresult($data);
 
         //print_r($data);
         $data['title'] = 'SIMULATION RESULT';
@@ -424,6 +424,8 @@ class Mps extends BaseController
     {
 
 
+       
+        
         $mmyy = explode(' ', $data['tday']);
         if (count($mmyy) < 2) {
 
@@ -431,20 +433,238 @@ class Mps extends BaseController
         }
 
         $db      = \Config\Database::connect('lcl');
-        $builder = $db->table('operation_production_plan_header');
+        
 
-        $sqls = 'SELECT ITEM_ID,sum(oi.IN_QTY) as inv_qty,
-            mbm.BOM_ITEM_QTY,(sum(oi.IN_QTY)/mbm.bom_item_qty) as maxprodqty
-            FROM master_bom mbm
-            inner join o_inventory oi on mbm.BOM_ITEM_ID=oi.ITEM_ID
-            where mbm.BOM_PRODUCT_ID=1 
-            group by ITEM_ID
-            ORDER BY maxprodqty';
 
-        $query = $db->query($sqls);
+        //check sim header, if exist, delete first.
 
-        $tmp = $query->getResultArray();
-        $maxprodqty = intval($tmp[0]['maxprodqty']);
+        //load plan header to simulation header
+        //load all required qty to simulation details
+        //then process simulation per item id ORDER BY production_sequence
+
+
+        //turned off for testing purpose
+        //INSERT INTO operation_simulation_header(opph_id,product_id)
+        $builder = $db->table('operation_simulation_header');
+        $query = 'SELECT opph_id,product_id 
+            FROM operation_production_plan_header opph
+            WHERE MONTH(opph.production_date)='.$mmyy[0].' AND 
+            YEAR(opph.production_date)='. $mmyy[1];
+
+
+        $sql = $builder->ignore(true)
+        ->setQueryAsData(new RawSql($query), null, 'opph_id, product_id')
+        ->insertBatch();
+
+        //end turned off for testing purpose
+        //die;
+
+
+        //insert sim detail
+        $builder = $db->table('operation_simulation_header osh');
+        $builder->select('osh_id,osh.opph_id,osh.product_id');
+        $builder->join('operation_production_plan_header opph', 'osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id');
+        $builder->where('month(opph.production_date)',$mmyy[0]);
+        $builder->where('year(opph.production_date)',$mmyy[1]);
+        // =373 and opph.product_id = 1');
+        // $query = $builder->get();
+
+        // $sqls = 'SELECT osh_id,osh.opph_id,osh.product_id 
+        //     from operation_simulation_header osh
+        //     inner join operation_production_plan_header opph
+        //     on osh.opph_id = opph.opph_id and osh.product_id = opph.product_id
+        //     where 
+		// 	month(opph.production_date) = '.  $mmyy[0].' and 
+		// 	year(opph.production_date) = '.  $mmyy[1]. '';
+        $query = $builder->get();
+        $simheader = $query->getResultArray();
+
+        // turned off for testing purpose
+        //foreach simheader, insert simdetails required qty
+        foreach ($simheader as $row) {
+            $osh_id = $row['osh_id'];
+            $builder = $db->table('operation_simulation_details');
+            $query  = 'SELECT osh.osh_id, mbm.BOM_ITEM_ID as item_id,(mbm.BOM_ITEM_QTY * opph.quantity) as req_qty
+                FROM master_bom mbm
+                INNER JOIN operation_simulation_header osh ON 
+                mbm.BOM_PRODUCT_ID=osh.product_id
+                INNER JOIN operation_production_plan_header opph ON 
+                osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id 
+                WHERE osh.osh_id='. $osh_id;
+            $sql = $builder->ignore(true)
+            ->setQueryAsData(new RawSql($query), null, 'osh_id,item_id, req_qty')
+            ->insertBatch();
+            $query2 = $db->getLastQuery();
+        }
+        // end turned off for testing purpose
+
+
+        //foreach item order by production_sequence and then order by prod_date
+        $builder = $db->table('operation_production_plan_header opph');
+        $builder->select('*');
+        $builder->orderBy('opph.production_date, opph.production_sequence');
+        // $sqls = 'SELECT * FROM operation_production_plan_header opph
+        //     ORDER BY opph.production_date, opph.production_sequence';
+        $query = $builder->get();
+        $opph = $query->getResultArray();
+
+        foreach ($opph as $row) {
+            $builder = $db->table('operation_simulation_details osd');
+            $builder->select('osd.*,opph.production_sequence as production_sequence, opph.production_date as production_date,osh.osh_id as osh_id');
+            $builder->join('operation_simulation_header osh', 'osd.osh_id=osh.osh_id');
+            $builder->join('operation_production_plan_header opph', 'osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id');
+            $builder->where('opph.opph_id',$row['opph_id']);
+            $builder->where('opph.product_id',$row['product_id']);
+            
+            //$oshsimresult=0;
+
+            $query = $builder->get();
+            $osd = $query->getResultArray();
+            //check sim table if not exist, get from o_inventory ORDER BY 
+            //PER item
+            foreach($osd as $osdrow) {
+
+                //if sequence = 1 -> get LAST DAY AVAILABLE QTY
+                //if sequence > 1 -> get TODAY SEQUENCE AVAILABLE QTY
+
+                $builder = $db->table('operation_simulation_details osd');
+                $builder->select('osd.end_bal_qty as avail_qty');
+                $builder->join('operation_simulation_header osh', 'osd.osh_id=osh.osh_id');
+                $builder->join('operation_production_plan_header opph', 'osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id');
+                $builder->where('osd.item_id',$osdrow['item_id']);
+                if ($osdrow['production_sequence'] == 1) {
+                    $builder->where('opph.production_date = DATE_SUB("'.$osdrow['production_date'].'", INTERVAL 1 DAY)');//if seq = 1
+                }
+                else {
+                    $builder->where('opph.production_date = "'.$osdrow['production_date'].'"');//if seq > 1
+                    $builder->where('opph.production_sequence ',($osdrow['production_sequence']-1));//if seq > 1
+                }
+
+                $builder->orderBy('opph.production_date DESC, opph.production_sequence DESC');
+                $query = $builder->get();
+                $avail = $query->getResultArray();
+
+                $sql = $db->getLastQuery();
+                
+                $dtpart = explode('-', $osdrow['production_date']);
+
+                if(((count($avail) == 0) || ($avail[0]['avail_qty'] == 0)) && intval($dtpart[2])==1) {
+                    //get from o_inventory, if 1st day of month 
+                    $builder = $db->table('o_inventory oi');
+                    $builder->select('oi.item_id, sum(oi.INV_QTY) AS avail_qty');
+                    $builder->where('oi.ITEM_ID',$osdrow['item_id']);
+                    $builder->groupBy('oi.item_id');
+                    $query = $builder->get();
+                    $avail = $query->getResultArray();
+                    if((count($avail) == 0) || ($avail[0]['avail_qty'] == 0)) {
+                        $avail_qty = 0;
+                    }else
+                    {
+                        $avail_qty= $avail[0]['avail_qty'];
+                    }
+                }else
+                {
+                    $avail_qty= $avail[0]['avail_qty'];
+                }
+
+                //get bookd qty
+                $builder = $db->table('operation_simulation_details osd');
+                $builder->select('osd.item_id,sum(osd.req_qty) as booked_qty');
+                $builder->join('operation_simulation_header osh', 'osd.osh_id=osh.osh_id');
+                $builder->join('operation_production_plan_header opph', 
+                    'osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id');
+                $builder->where('osd.osh_id != ',$osdrow['osh_id']);
+                $builder->where('osd.item_id = ',$osdrow['item_id']);
+                $builder->where('opph.production_date',$osdrow['production_date']);
+                $builder->where('opph.production_sequence < ',$osdrow['production_sequence']);
+                $builder->groupby('osd.item_id');
+                $query = $builder->get();
+                $booked = $query->getResultArray();
+
+                $sql = $db->getLastQuery();
+
+                if((count($booked) == 0) || ($booked[0]['booked_qty'] == 0)) {
+                    $booked_qty = 0;
+                } else {
+                    $booked_qty = $booked[0]['booked_qty'];
+                }
+
+                
+                //after get avail_qty,booked_qty calculate end_bal_qty then update into sim_details
+                $end_bal_qty = $avail_qty //- $booked_qty 
+                    - $osdrow['req_qty'];
+                $dtins=[];
+
+                if($end_bal_qty<0){
+                    //not enough qty available (set end_bal_qty to 0?)
+                    $dtins =[
+                        'avail_qty' => $avail_qty,
+                        'booked_qty' => $booked_qty,
+                        'end_bal_qty' => 0,
+                    ];
+                }
+                else{
+                    //enough qty, update into sim_details
+                    $dtins =[
+                        'avail_qty' => $avail_qty,
+                        'booked_qty' => $booked_qty,
+                        'end_bal_qty' => $end_bal_qty,
+                    ];
+
+                
+                }
+                $osd_id = $osdrow['osd_id'];
+                $builder = $db->table('operation_simulation_details osd');
+                $builder->where('osd.osd_id', $osd_id);
+                $builder->update($dtins);
+
+            
+            }
+
+            //after simdetail, update simheader, check result
+            //find osh id where end_bal_qty < 0 then get the prod date.
+            $builder = $db->table('operation_simulation_details osd');
+            $builder->select('osd.item_id,(osd.avail_qty-osd.req_qty) as calc_end, osd.req_qty, osd.avail_qty,osd.booked_qty, osd.end_bal_qty');
+            $builder->join('operation_simulation_header osh', 'osd.osh_id=osh.osh_id');
+            $builder->where('osh.opph_id',$row['opph_id']);
+            $builder->where('osh.product_id',$row['product_id']);
+            $builder->where('(osd.avail_qty-osd.req_qty) < 0');
+            $query = $builder->get();
+            $oshsimsresult = $query->getResultArray();
+            $sql = $db->getLastQuery();
+            $dtins = [];
+
+            if (count($oshsimsresult) > 0) {
+                // there's shortage, simresult = 0
+                $dtins =[
+                    'simulation_result' => 0,
+                 ];
+            }
+            else{
+                // there's no shortage, simresult = 1
+               
+                //$osh_id = $oshsimsresult[0]['osd_id'];
+                $dtins =[
+                   'simulation_result' => 1,
+                ];
+                
+               
+
+            }
+            $builder = $db->table('operation_simulation_header osh');
+            $builder->where('osh.opph_id', $row['opph_id']);
+            $builder->where('osh.product_id', $row['product_id']);
+            $builder->update($dtins);
+            
+
+            
+            
+
+            
+
+        }
+
+        die;
 
         //example : starting from now(march 2024)
         //  $mmyy[0]=3;//month
@@ -532,8 +752,6 @@ class Mps extends BaseController
 
                 $mmyy[1] = "";
             }
-
-            // print_r($mmyy);
 
 
 

@@ -1,17 +1,45 @@
 <script type="text/javascript">
-    // function procsim()
-    // {
-    //     var vl = document.getElementById("tday").value;
-    //     $.ajax({
-    //         url : '<?php echo site_url('/processsimulation')?>',
-    //         type : 'POST',
-    //         data : {tday:  vl}
-    //         // dataType: 'json',
-    //         success: function(data){
-    //             window.location.href = "/path/to/thankyoupage";
-    //         }
-    //     })
-    // }
+    function loadtable(retData){
+        var res='';
+        // <table class="table table-striped-columns">
+        res=res+
+        '<table class="table table-striped-columns"> <tr>'+
+        '    <th>  </th>';
+        for(i = 0;i < 31;i++) {
+            res+=
+            '    <th>'+(i+1)+'</th>';
+        };
+        res=res+'</tr>';
+
+        if (retData.products.length > 0) {
+            for(x=0;x<retData.products.length;x++)
+            {
+                console.log(retData.products[x]["prd"].length);
+                res +=
+                '<tr>'+
+                    '<th scope="row">'+retData.products[x]['product_id']+
+                    '</br>'+retData.products[x]['varian_id']+
+                    '</br>'+retData.products[x]['color_id']+
+                    '</br><div class="btn-group-sm" role="group">'+
+                    '<button type="button" class="btn btn-primary">Edit</button>'+
+                    '<button type="button" class="btn btn-primary">Delete</button></div> </th>';
+                    for (i = 0;i <retData.products[x]["prd"].length;i++) {
+                        console.log(retData.products[x]['prd'][i]);
+                        res = res + '<td> <br>'+retData.products[x]['prd'][i]+'</td>';
+                    };
+                    res= res + '</tr>';
+
+            }
+            res+-'</table>';
+        }
+        else {
+            res += '<tr><th scope="row">Tidak ada data</th></tr></table>';
+        }
+
+
+        $('#tablez').html(res);
+        console.log("table");
+    }
     
     function mth(updown) {
         //ambil selected calendar utk proses hari. calendar ada di tag h2
@@ -50,45 +78,7 @@
             success: function(data){
                 retData=data.results;
                 console.log(retData);
-	            var res='';
-				// <table class="table table-striped-columns">
-				res=res+
-				'<table class="table table-striped-columns"> <tr>'+
-                '    <th>  </th>';
-				for(i = 0;i < 31;i++) {
-					res+=
-                    '    <th>'+(i+1)+'</th>';
-				};
-				res=res+'</tr>';
-
-				if (retData.products.length > 0) {
-					for(x=0;x<retData.products.length;x++)
-					{
-						console.log(retData.products[x]["prd"].length);
-						res +=
-						'<tr>'+
-							'<th scope="row">'+retData.products[x]['product_id']+
-							'</br>'+retData.products[x]['varian_id']+
-							'</br>'+retData.products[x]['color_id']+
-							'</br><div class="btn-group-sm" role="group">'+
-							'<button type="button" class="btn btn-primary">Edit</button>'+
-							'<button type="button" class="btn btn-primary">Delete</button></div> </th>';
-							for (i = 0;i <retData.products[x]["prd"].length;i++) {
-								console.log(retData.products[x]['prd'][i]);
-								res = res + '<td> <br>'+retData.products[x]['prd'][i]+'</td>';
-							};
-							res= res + '</tr>';
-
-					}
-					res+-'</table>';
-				}
-				else {
-					res += '<tr><th scope="row">Tidak ada data</th></tr></table>';
-				}
-
-
-				$('#tablez').html(res);
-				console.log("table");
+	            loadtable(retData);
 
             },
             error: function(data){
@@ -97,21 +87,7 @@
             }
         });
 
-        
-        // $.ajax({
-        //     url : '
-        //     type : 'POST',
-        //     data : {tday: vl},
-        //     dataType: 'text',
-        //     success: function(data){
-        //         console.log("success ajax");
-        //     },
-        //     error: function(data){
-        //         console.log("failed 2 ajax");
-        //     }
-        // });
 
-           
         
         }
 
@@ -134,8 +110,10 @@
             data : {tday: vl},
             dataType: 'json',
             success: function(data){
-				
-                console.log(data);
+                retData=data.results;
+                console.log(retData);
+				loadtable(data.results);
+                //console.log(data);
             },
             error: function(data){
                 console.log("failed 2 ajax");
@@ -233,7 +211,7 @@ table {
     <!-- <input type="submit" value="Save" hidden> -->
 	<hr>
     <div class="row" colspan="4">
-    <form action ="processsimulation" class = "form-inline" method="post">
+    <form action ="simresult" class = "form-inline" method="post">
         <input type=text id="tday" name="tday" value="" hidden >
 		<div class="col-1 d-grid gap-2"> 
 			<a href="<?php echo site_url('/mps')?>" class="btn btn-primary" role="button">Add</a>
