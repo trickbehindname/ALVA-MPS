@@ -211,7 +211,7 @@ table {
     <!-- <input type="submit" value="Save" hidden> -->
 	<hr>
     <div class="row" colspan="4">
-    <form action ="simresult" class = "form-inline" method="post">
+    <form action ="processsimulation" class = "form-inline" method="post">
         <input type=text id="tday" name="tday" value="" hidden >
 		<div class="col-1 d-grid gap-2"> 
 			<a href="<?php echo site_url('/mps')?>" class="btn btn-primary" role="button">Add</a>

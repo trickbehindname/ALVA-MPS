@@ -19,6 +19,7 @@ $routes->match(['get','post'],'loadsimresult','Mps::loadsimresult');
 $routes->match(['get','post'],'simulation','Mps::simulation');
 $routes->match(['get','post'],'loadsimulation','Mps::loadsimulation');
 $routes->match(['get','post'],'processsimulation','Mps::processsimulation');
+$routes->match(['get','post'],'simresdetail','Mps::simresdetail');
 
 
 //$routes->get('(:segment)', [Mps::class, 'view']);

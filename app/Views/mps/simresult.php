@@ -1,4 +1,4 @@
-<!-- <script type="text/javascript">
+<script type="text/javascript">
       $(document).ready(function(){
         // karena calendar loading setelah page ready, jadi harus ambil today month manual.
         // const monthNames = ["January", "February", "March", "April", "May", "June",
@@ -43,8 +43,11 @@
 							'</br>'+retData.products[x]['varian_id']+
 							'</br>'+retData.products[x]['color_id']+
 							'</br><div class="btn-group-sm" role="group">'+
-							'<button type="button" class="btn btn-primary">Edit</button>'+
-							'<button type="button" class="btn btn-primary">Delete</button></div> </th>';
+                            '<form action ="simresdetail" method="post">' +
+                            '<input type=text id="dtl" name="dtl" value="'+vl+' '+x+'" hidden >'+
+                            '<button type="submit" class="btn btn-primary">Details</button>'+
+                            '</form>'+
+                            ' </th>';
 							for (i = 0;i <retData.products[x]["prd"].length;i++) {
 								console.log(retData.products[x]['prd'][i]);
 
@@ -138,8 +141,11 @@
 							'</br>'+retData.products[x]['varian_id']+
 							'</br>'+retData.products[x]['color_id']+
 							'</br><div class="btn-group-sm" role="group">'+
-							'<button type="button" class="btn btn-primary">Edit</button>'+
-							'<button type="button" class="btn btn-primary">Delete</button></div> </th>';
+                            '<form action ="mpssimresdetail" method="post">' +
+                            '<input type=text id="dtl" name="dtl" value="'+vl+' '+x+'" hidden >'+
+                            '<button type="submit" class="btn btn-primary">Details</button>'+
+                            '</form>'+
+                            ' </th>';
 							for (i = 0;i <retData.products[x]["prd"].length;i++) {
 								console.log(retData.products[x]['prd'][i]);
 
@@ -174,7 +180,7 @@
         });
     }
 
-</script> -->
+</script>
 
 <input type=text id="tday" name="tday" value="" >
     <div class="calendar calendar-first" id="calendar_first">

@@ -379,13 +379,13 @@ class Mps extends BaseController
     {
         helper('form');
         $data = $this->request->getPost(['tday']);
-        // $mmyy = explode(' ', $data['tday']);
-        // if (count($mmyy) < 2) {
-        //     $mmyy[1] = "";
-        // }
+        $mmyy = explode(' ', $data['tday']);
+        if (count($mmyy) < 2) {
+            $mmyy[1] = "";
+        }
 
 
-        $data = $this->processsimresult($data);
+        $data = $this->loadsimview($mmyy);
 
         $data['title'] = 'SIMULATION RESULLT'; // Capitalize the first letter
 
@@ -408,8 +408,19 @@ class Mps extends BaseController
         //helper('form');
         $data = $this->request->getPost(['tday']);
 
-        $data = $this->processsimresult($data);
+        // if($data['tday'] != '') {
 
+        //     $mmyy = explode(' ', $data['tday']);
+        //     if (count($mmyy) < 2) {
+
+        //         $mmyy[1] = "";
+        //     }
+
+
+        //     $data = $this->loadsimview($mmyy);
+
+        // }
+        
         //print_r($data);
         $data['title'] = 'SIMULATION RESULT';
 
@@ -705,8 +716,6 @@ class Mps extends BaseController
 
         }
 
-        //die;
-
         //example : starting from now(march 2024)
         //  $mmyy[0]=3;//month
         //  $mmyy[1]=2024;//year
@@ -757,52 +766,10 @@ class Mps extends BaseController
             $data['products'][$i]['maxproddate'] = $maxproddate;
         };
 
-        // for($i = 0;$i < count($data['products']);$i++) 
-        // {
-        //     $x=0;
-        //     foreach($data['products'][$i]['prd'] as $rowPrd)
-        //     {
-        //         $x++;
-        //         if($rowPrd['sim_result']==0){
-        //             $maxproddate = $x;
-        //             break;
-        //         }
-                
-        //     }
-        // }
-        //die;
-
-        //max production date for this product(should change to dynamic)
-        //$data['products'][0]['maxproddate'] = $i;
-
-
-
 
         $db->close();
 
-        // $prodqty = 0;
-        // //set maximum date for production(don't count if no prod this month)
-        // for($i = 0;$i < count($data['products'][0]['prd']);$i++) {
-        //     $prodqty = $prodqty + $data['products'][0]['prd'][$i];
-        //     //print_r($maxprodqty);
-
-        //     if($prodqty == $maxprodqty) {
-        //         $i = $i + 1;
-        //         break;
-        //     }
-        //     if($prodqty >= $maxprodqty) {
-
-        //         break;
-
-        //     }
-
-        // };
-
-
-
-
-
-        //$result = array("results" => $data);
+        $data = $this->loadsimview($mmyy);
 
         return $data;
 
@@ -826,9 +793,99 @@ class Mps extends BaseController
 
         }
 
+        $data = $this->processsimresult($data);
+
         $data['title'] = 'Process'; // Capitalize the first letter
         return view('templates/header', $data)
         . view('mps/simresult', $data)
+        . view('templates/footer');
+    }
+
+    public function loadsimview($mmyy) {
+    
+        $db      = \Config\Database::connect('lcl');
+        $builder = $db->table('operation_production_plan_header opph');
+        $builder->select('product_id,color_id,varian_id,model_id,production_sequence');
+        $builder->distinct();
+        $builder->where('Month(production_date)', $mmyy[0]);
+        $builder->where('Year(production_date)', $mmyy[1]);
+        $query = $builder->get();
+        $data['products'] = $query->getResultArray();
+
+        for($i = 0;$i < count($data['products']);$i++) {
+            //ambil row dari tabel operation_production_plan_header
+            //yang punya product-color-varian-bulan produksi yang sama
+
+            $builder->select('day(production_date) as tgl,quantity,simulation_result')    //,planning_date,production_sequence,JPH,VIN,status');
+                ->join('operation_simulation_header osh',
+                    'osh.opph_id = opph.opph_id and osh.product_id = opph.product_id')
+                ->where('opph.product_id', $data['products'][$i]['product_id'])
+                ->where('color_id', $data['products'][$i]['color_id'])
+                ->where('varian_id', $data['products'][$i]['varian_id'])
+                ->where('model_id', $data['products'][$i]['model_id'])
+                ->where('Month(production_date)', $mmyy[0])
+                ->where('Year(production_date)', $mmyy[1]);
+            $query = $builder->get();
+            $dt = [];
+            $dt = $query->getResultArray();
+
+
+            $data['products'][$i]['prd'] = $dt;
+            $d = [];
+
+            //print_r(count($dt));
+            $maxproddate=0;
+
+            foreach($dt as $key => $value) {
+                $d = array_merge($d, [
+                    $value['tgl'] => $value['quantity']                    
+                ]);
+                $maxproddate=$maxproddate+intval($value['simulation_result']);
+
+            }
+
+
+            $data['products'][$i]['prd'] = $d;
+            $data['products'][$i]['maxproddate'] = $maxproddate;
+        };
+
+
+        $db->close();
+        return $data;
+    }
+
+    public function simresdetail($tday = null)
+    {
+        // Capitalize the first letter
+
+        helper('form');
+        $data = $this->request->getPost(['dtl']);
+        $mmyy = explode(' ', $data['dtl']);
+        if (count($mmyy) < 2) {
+            $mmyy[1] = "";
+        }
+
+        $db      = \Config\Database::connect('lcl');
+        $builder = $db->table('operation_simulation_details osd');
+        $builder->select('osd.item_id,
+            osd.req_qty,osd.avail_qty,osd.booked_qty, osd.end_bal_qty')
+            ->join('operation_simulation_header osh', 'osd.osh_id=osh.osh_id')
+            ->join('operation_production_plan_header opph',
+                'osh.opph_id=opph.opph_id and osh.product_id=opph.product_id')
+            ->where('month(opph.production_date)',$mmyy[0])
+            ->where('year(opph.production_date)',$mmyy[1])
+            ->where('production_sequence',intval($mmyy[2])+1);
+        $query = $builder->get();
+        $simresdetail = $query->getResultArray();
+        print_r($simresdetail);
+        die;
+        $data['simresdetail']=$simresdetail;
+        $data['title'] = 'SIMULATION RESULT DETAILS';
+
+        //$result = array("results" => $data);
+
+        return view('templates/header', $data)
+        . view('mps/simresdetail', $data)
         . view('templates/footer');
     }
 }
