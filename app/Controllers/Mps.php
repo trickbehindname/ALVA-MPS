@@ -424,7 +424,7 @@ class Mps extends BaseController
     {
 
 
-       
+       //need to delete the data for this month first. 
         
         $mmyy = explode(' ', $data['tday']);
         if (count($mmyy) < 2) {
@@ -437,7 +437,45 @@ class Mps extends BaseController
 
 
         //check sim header, if exist, delete first.
+        $builder = $db->table('operation_simulation_header osh');
 
+        $builder->select('count(*)')
+                ->join('operation_production_plan_header opph', 'osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id')
+                ->where('Month(production_date)', $mmyy[0])
+                ->where('Year(production_date)', $mmyy[1]);
+
+        $query = $builder->get();
+        $chksh = $query->getResult();
+        if (count($chksh) > 0) {
+            $query = $db->table('operation_simulation_header osh')
+                        ->select('osh_id')
+                        ->join('operation_production_plan_header opph', 'osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id')
+                        ->where('Month(production_date)', $mmyy[0])
+                        ->where('Year(production_date)', $mmyy[1]);
+
+            $sql = $db->table('operation_simulation_details')
+                ->setQueryAsData($query,'opsh')
+                ->onConstraint('osh_id')
+                ->where('operation_simulation_details.osh_id = opsh.osh_id')
+                ->deleteBatch();
+
+            $query = $db->table('operation_production_plan_header opph')
+                ->select('opph_id,product_id')
+                //->join('operation_production_plan_header opph', 'osh.opph_id = opph.opph_id AND osh.product_id = opph.product_id')
+                ->where('Month(production_date)', $mmyy[0])
+                ->where('Year(production_date)', $mmyy[1]);
+            
+            $sql = $db->table('operation_simulation_header')
+                ->setQueryAsData($query,'opph')
+                ->onConstraint('opph_id')
+                ->where('operation_simulation_header.opph_id = opph.opph_id')
+                ->where('operation_simulation_header.product_id = opph.product_id')
+                ->deleteBatch();
+            $query2 = $db->getLastQuery();
+               // die;
+        }
+
+        
         //load plan header to simulation header
         //load all required qty to simulation details
         //then process simulation per item id ORDER BY production_sequence
@@ -548,7 +586,9 @@ class Mps extends BaseController
                 
                 $dtpart = explode('-', $osdrow['production_date']);
 
-                if(((count($avail) == 0) || ($avail[0]['avail_qty'] == 0)) && intval($dtpart[2])==1) {
+                if(((count($avail) == 0) || ($avail[0]['avail_qty'] == 0)) && 
+                    (intval($dtpart[2])==1 && $osdrow['production_sequence'] == 1)) 
+                {
                     //get from o_inventory, if 1st day of month 
                     $builder = $db->table('o_inventory oi');
                     $builder->select('oi.item_id, sum(oi.INV_QTY) AS avail_qty');
