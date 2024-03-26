@@ -589,7 +589,7 @@ class Mps extends BaseController
                 if(((count($avail) == 0) || ($avail[0]['avail_qty'] == 0)) && 
                     (intval($dtpart[2])==1 && $osdrow['production_sequence'] == 1)) 
                 {
-                    //get from o_inventory, if 1st day of month 
+                    //get from o_inventory, if 1st day of month and seq = 1
                     $builder = $db->table('o_inventory oi');
                     $builder->select('oi.item_id, sum(oi.INV_QTY) AS avail_qty');
                     $builder->where('oi.ITEM_ID',$osdrow['item_id']);
@@ -664,11 +664,12 @@ class Mps extends BaseController
             //after simdetail, update simheader, check result
             //find osh id where end_bal_qty < 0 then get the prod date.
             $builder = $db->table('operation_simulation_details osd');
-            $builder->select('osd.item_id,(osd.avail_qty-osd.req_qty) as calc_end, osd.req_qty, osd.avail_qty,osd.booked_qty, osd.end_bal_qty');
-            $builder->join('operation_simulation_header osh', 'osd.osh_id=osh.osh_id');
-            $builder->where('osh.opph_id',$row['opph_id']);
-            $builder->where('osh.product_id',$row['product_id']);
-            $builder->where('(osd.avail_qty-osd.req_qty) < 0');
+            $builder->select('osd.item_id,(osd.avail_qty-osd.req_qty) as calc_end, 
+                osd.req_qty,osd.avail_qty,osd.booked_qty, osd.end_bal_qty')
+            ->join('operation_simulation_header osh', 'osd.osh_id=osh.osh_id')
+            ->where('osh.opph_id',$row['opph_id'])
+            ->where('osh.product_id',$row['product_id'])
+            ->where('((osd.avail_qty-osd.req_qty) < 0 or osd.avail_qty <=0)');
             $query = $builder->get();
             $oshsimsresult = $query->getResultArray();
             $sql = $db->getLastQuery();
@@ -704,14 +705,15 @@ class Mps extends BaseController
 
         }
 
-        die;
+        //die;
 
         //example : starting from now(march 2024)
         //  $mmyy[0]=3;//month
         //  $mmyy[1]=2024;//year
 
         //get this month simulation data
-        $builder->select('product_id,color_id,varian_id,model_id');
+        $builder = $db->table('operation_production_plan_header opph');
+        $builder->select('product_id,color_id,varian_id,model_id,production_sequence');
         $builder->distinct();
         $builder->where('Month(production_date)', $mmyy[0]);
         $builder->where('Year(production_date)', $mmyy[1]);
@@ -722,13 +724,15 @@ class Mps extends BaseController
             //ambil row dari tabel operation_production_plan_header
             //yang punya product-color-varian-bulan produksi yang sama
 
-            $builder->select('day(production_date) as tgl,quantity');//,planning_date,production_sequence,JPH,VIN,status');
-            $builder->where('product_id', $data['products'][$i]['product_id']);
-            $builder->where('color_id', $data['products'][$i]['color_id']);
-            $builder->where('varian_id', $data['products'][$i]['varian_id']);
-            $builder->where('model_id', $data['products'][$i]['model_id']);
-            $builder->where('Month(production_date)', $mmyy[0]);
-            $builder->where('Year(production_date)', $mmyy[1]);
+            $builder->select('day(production_date) as tgl,quantity,simulation_result')    //,planning_date,production_sequence,JPH,VIN,status');
+                ->join('operation_simulation_header osh',
+                    'osh.opph_id = opph.opph_id and osh.product_id = opph.product_id')
+                ->where('opph.product_id', $data['products'][$i]['product_id'])
+                ->where('color_id', $data['products'][$i]['color_id'])
+                ->where('varian_id', $data['products'][$i]['varian_id'])
+                ->where('model_id', $data['products'][$i]['model_id'])
+                ->where('Month(production_date)', $mmyy[0])
+                ->where('Year(production_date)', $mmyy[1]);
             $query = $builder->get();
             $dt = [];
             $dt = $query->getResultArray();
@@ -738,38 +742,63 @@ class Mps extends BaseController
             $d = [];
 
             //print_r(count($dt));
+            $maxproddate=0;
+
             foreach($dt as $key => $value) {
-                $d = array_merge($d, [$value['tgl'] => $value['quantity']]);
+                $d = array_merge($d, [
+                    $value['tgl'] => $value['quantity']                    
+                ]);
+                $maxproddate=$maxproddate+intval($value['simulation_result']);
 
             }
 
+
             $data['products'][$i]['prd'] = $d;
+            $data['products'][$i]['maxproddate'] = $maxproddate;
+        };
+
+        // for($i = 0;$i < count($data['products']);$i++) 
+        // {
+        //     $x=0;
+        //     foreach($data['products'][$i]['prd'] as $rowPrd)
+        //     {
+        //         $x++;
+        //         if($rowPrd['sim_result']==0){
+        //             $maxproddate = $x;
+        //             break;
+        //         }
+                
+        //     }
+        // }
+        //die;
+
+        //max production date for this product(should change to dynamic)
+        //$data['products'][0]['maxproddate'] = $i;
 
 
-        }
+
 
         $db->close();
 
-        $prodqty = 0;
-        //set maximum date for production(don't count if no prod this month)
-        for($i = 0;$i < count($data['products'][0]['prd']);$i++) {
-            $prodqty = $prodqty + $data['products'][0]['prd'][$i];
-            //print_r($maxprodqty);
+        // $prodqty = 0;
+        // //set maximum date for production(don't count if no prod this month)
+        // for($i = 0;$i < count($data['products'][0]['prd']);$i++) {
+        //     $prodqty = $prodqty + $data['products'][0]['prd'][$i];
+        //     //print_r($maxprodqty);
 
-            if($prodqty == $maxprodqty) {
-                $i = $i + 1;
-                break;
-            }
-            if($prodqty >= $maxprodqty) {
+        //     if($prodqty == $maxprodqty) {
+        //         $i = $i + 1;
+        //         break;
+        //     }
+        //     if($prodqty >= $maxprodqty) {
 
-                break;
+        //         break;
 
-            }
+        //     }
 
-        };
+        // };
 
-        //max production date for this product(should change to dynamic)
-        $data['products'][0]['maxproddate'] = $i;
+
 
 
 
